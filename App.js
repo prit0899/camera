@@ -9,12 +9,54 @@ import {
 	Image,
 	TouchableOpacity,
 } from "react-native";
+//import CameraComponent from "./CameraPicker";
 import { Camera } from "expo-camera";
+import { ImagePicker, Permissions, MediaLibrary } from 'expo';
+
+const CameraComponent = () => {
+  const [photo, setPhoto] = useState(null);
+
+  const takePicture = async () => {
+    const { status } = await Permissions.askAsync(Permissions.CAMERA);
+    if (status !== 'granted') {
+      // Handle the error.
+      return;
+    }
+
+    const photo = await ImagePicker.launchCameraAsync();
+	if (!photo.cancelled) {
+		setPhoto(photo);
+	  }
+  };
+
+  const saveImage = async () => {
+	if (!photo) {
+		return;
+	  }
+	  try {
+		const asset = await MediaLibrary.createAssetAsync(photo.uri);
+		console.log("Image saved to gallery:", asset);
+	  } catch (error) {
+		console.error("Error saving image to gallery:", error);
+	  }
+    // Do something with the asset, such as displaying it or uploading it to a server.
+  };
+
+  return (
+    <View>
+      <Button title="Take Picture" onPress={takePicture} />
+      {photo && <Image source={{ uri: photo.uri }} />}
+      {photo && <Button title="Save Image" onPress={saveImage} />}
+    </View>
+  );
+};
 
 export default function App() {
 	const [hasCameraPermission, setHasCameraPermission] = useState(null);
 	const [camera, setCamera] = useState(null);
 	const [image, setImage] = useState(null);
+
+	const [showNewScreen, setShowNewScreen] = useState(false);
 
 	useEffect(() => {
 		(async () => {
@@ -27,12 +69,22 @@ export default function App() {
 		if (camera) {
 			const data = await camera.takePictureAsync(null);
 			setImage(data.uri);
+			try {
+				const asset = await MediaLibrary.createAssetAsync(data.uri);
+				console.log("Image saved to gallery:", asset);
+			  } catch (error) {
+				console.error("Error saving image to gallery:", error);
+			  }
 		}
 	};
 
 	const retakePicture = () => {
 		setImage(null);
 	};
+
+	const savePicture = () => {
+		setShowNewScreen(true);
+	  };
 
 	if (hasCameraPermission === false) {
 		return <Text>No access to camera</Text>;
@@ -77,6 +129,8 @@ export default function App() {
 					</Text>
 				</TouchableOpacity>
 			)}
+			<Button title="Save Picture" onPress={savePicture} />
+			{showNewScreen && <CameraComponent />}
 		</View>
 	);
 }
