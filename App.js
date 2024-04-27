@@ -1,6 +1,6 @@
 //App.js
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect,PermissionsAndroid  } from "react";
 import {
 	StyleSheet,
 	Text,
@@ -9,16 +9,14 @@ import {
 	Image,
 	TouchableOpacity,
 } from "react-native";
-//import CameraComponent from "./CameraPicker";
 import { Camera } from "expo-camera";
-import {  Permissions, MediaLibrary } from 'expo';
+import { MediaLibrary } from 'expo';
 
 export default function App() {
 	const [hasCameraPermission, setHasCameraPermission] = useState(null);
 	const [camera, setCamera] = useState(null);
 	const [image, setImage] = useState(null);
 
-	const [showNewScreen, setShowNewScreen] = useState(false);
 
 	useEffect(() => {
 		(async () => {
@@ -31,12 +29,27 @@ export default function App() {
 		if (camera) {
 			const data = await camera.takePictureAsync(null);
 			setImage(data.uri);
-			try {
-				const asset = await MediaLibrary.createAssetAsync(data.uri);
-				console.log("Image saved to gallery:", asset);
-			  } catch (error) {
-				console.error("Error saving image to gallery:", error);
-			  }
+			
+	  
+	  try {
+		const granted = await PermissionsAndroid.request(
+		  PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE);
+		if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+		  console.log('You can use the camera');
+
+		  try {
+			const asset = await MediaLibrary.createAssetAsync(data.uri);
+			console.log("Image saved to gallery:", asset);
+		  } catch (error) {
+			console.error("Error saving image to gallery:", error);
+		  }
+
+		} else {
+		  console.log('Camera permission denied');
+		}
+	  } catch (err) {
+		console.warn(err);
+	  }	
 		}
 	};
 
